@@ -1,7 +1,10 @@
 package com.financeflow.api;
 
+import com.financeflow.auth.AccountSuspendedException;
+import com.financeflow.auth.InvalidCredentialsException;
 import com.financeflow.user.DuplicateEmailException;
 import com.financeflow.wallet.CurrencyMismatchException;
+import com.financeflow.wallet.WalletAccessDeniedException;
 import com.financeflow.wallet.InsufficientFundsException;
 import com.financeflow.wallet.InvalidTransferException;
 import com.financeflow.wallet.WalletNotActiveException;
@@ -18,6 +21,21 @@ public class ApiExceptionHandler {
     @ExceptionHandler(DuplicateEmailException.class)
     ProblemDetail handleDuplicateEmail(DuplicateEmailException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    @ExceptionHandler(InvalidCredentialsException.class)
+    ProblemDetail handleInvalidCredentials(InvalidCredentialsException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
+    }
+
+    @ExceptionHandler(AccountSuspendedException.class)
+    ProblemDetail handleAccountSuspended(AccountSuspendedException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
+    }
+
+    @ExceptionHandler(WalletAccessDeniedException.class)
+    ProblemDetail handleWalletAccessDenied(WalletAccessDeniedException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
     }
 
     @ExceptionHandler(WalletNotFoundException.class)

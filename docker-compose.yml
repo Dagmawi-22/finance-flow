@@ -1,11 +1,11 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: financeflow-postgres
+    container_name: ${POSTGRES_CONTAINER_NAME:-financeflow-postgres}
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-financeflow}
-      POSTGRES_USER: ${POSTGRES_USER:-financeflow}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-financeflow}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
@@ -18,7 +18,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: financeflow-redis
+    container_name: ${REDIS_CONTAINER_NAME:-financeflow-redis}
     ports:
       - "${REDIS_PORT:-6379}:6379"
     volumes:
@@ -28,6 +28,26 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+  app:
+    build: .
+    container_name: ${APP_CONTAINER_NAME:-financeflow-app}
+    ports:
+      - "${SERVER_PORT:-8080}:${SERVER_PORT:-8080}"
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      SERVER_PORT: ${SERVER_PORT:-8080}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
 volumes:
   postgres_data:

@@ -1,63 +1,21 @@
 # FinanceFlow
 
-Ledger-first wallet and transaction platform built with Spring Boot, PostgreSQL, and Redis.
+Ledger-first wallet platform — Spring Boot, PostgreSQL, Redis.
 
-## Prerequisites
-
-- Java 21+
-- Maven 3.9+
-- Docker & Docker Compose
-
-## Quick start
-
-Start infrastructure:
+**Requires:** Java 21, Maven 3.9, Docker
 
 ```bash
-docker compose up -d
+cp .env.example .env
+
+# Full stack
+docker compose up -d --build
+
+# Local dev (infra only)
+docker compose up -d postgres redis && mvn spring-boot:run
 ```
 
-Run the application:
+- Health: http://localhost:8080/api/v1/health
+- Swagger: http://localhost:8080/swagger-ui.html
+- Tests: `mvn test` (needs Docker)
 
-```bash
-mvn spring-boot:run
-```
-
-Verify:
-
-```bash
-curl http://localhost:8080/api/v1/health
-curl http://localhost:8080/actuator/health
-```
-
-OpenAPI UI: http://localhost:8080/swagger-ui.html
-
-## Run tests
-
-```bash
-mvn test
-```
-
-Tests use Testcontainers — Docker must be running.
-
-## Project structure
-
-```
-src/main/java/com/financeflow/
-├── FinanceFlowApplication.java   # Entry point
-└── api/                          # REST controllers
-
-src/main/resources/
-├── application.yml
-└── db/migration/                 # Flyway SQL migrations
-```
-
-## Build roadmap
-
-| Brick | Scope |
-|-------|-------|
-| **1** | Project scaffold, Docker, health checks |
-| 2 | Wallet domain model & CRUD |
-| 3 | Double-entry ledger & transactions |
-| 4 | Idempotency (Redis) |
-| 5 | Auth & role-based access |
-| 6 | Audit logging & reconciliation |
+**Roadmap:** wallets → ledger → transfers → idempotency → auth → audit

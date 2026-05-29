@@ -4,13 +4,12 @@ import com.financeflow.domain.User;
 import com.financeflow.domain.UserRepository;
 import com.financeflow.domain.UserRole;
 import com.financeflow.domain.UserStatus;
-import com.financeflow.domain.Wallet;
 import com.financeflow.domain.WalletRepository;
-import com.financeflow.domain.WalletStatus;
 import com.financeflow.user.dto.CreateUserRequest;
 import com.financeflow.user.dto.UserResponse;
+import com.financeflow.user.event.UserCreatedEvent;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,9 +22,7 @@ public class UserService {
     private final WalletRepository walletRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
-
-    @Value("${financeflow.wallet.default-currency}")
-    private String defaultCurrency;
+    private final ApplicationEventPublisher events;
 
     @Transactional
     public UserResponse createUser(CreateUserRequest request) {
@@ -42,11 +39,10 @@ public class UserService {
         user.setStatus(UserStatus.ACTIVE);
         userRepository.save(user);
 
-        var wallet = new Wallet();
-        wallet.setUser(user);
-        wallet.setCurrency(defaultCurrency);
-        wallet.setStatus(WalletStatus.ACTIVE);
-        walletRepository.save(wallet);
+        events.publishEvent(new UserCreatedEvent(user));
+
+        var wallet = walletRepository.findByUser_Id(user.getId())
+                .orElseThrow(() -> new IllegalStateException("Wallet not provisioned for user " + user.getId()));
 
         return userMapper.toResponse(user, wallet);
     }

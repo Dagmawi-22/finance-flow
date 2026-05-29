@@ -1,6 +1,3 @@
--- FinanceFlow baseline schema
--- Domain tables (wallets, transactions, ledger entries) will be added in later migrations.
-
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 CREATE TABLE schema_version_marker (

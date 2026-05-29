@@ -43,3 +43,7 @@ springdoc:
     path: /api-docs
   swagger-ui:
     path: /swagger-ui.html
+
+financeflow:
+  wallet:
+    default-currency: ${WALLET_DEFAULT_CURRENCY:ETB}

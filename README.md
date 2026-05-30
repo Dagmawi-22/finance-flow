@@ -18,4 +18,6 @@ docker compose up -d postgres redis && mvn spring-boot:run
 - Swagger: http://localhost:8080/swagger-ui.html
 - Tests: `mvn test` (needs Docker)
 
-**Roadmap:** wallets → ledger → transfers → idempotency → auth → audit
+**Roadmap:** wallets → ledger → idempotency → audit
+
+Auth: `POST /api/v1/auth/login` → use `Authorization: Bearer <token>` on wallet endpoints.

@@ -13,4 +13,5 @@ public class WalletBalanceResponse {
     String currency;
     long balance;
     WalletStatus status;
+    UUID transactionId;
 }

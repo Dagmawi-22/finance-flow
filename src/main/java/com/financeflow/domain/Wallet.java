@@ -43,6 +43,9 @@ public class Wallet {
     @Column(nullable = false)
     private WalletStatus status;
 
+    @Column(nullable = false)
+    private long balance;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 

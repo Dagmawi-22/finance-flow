@@ -73,6 +73,7 @@ class UserCreationIntegrationTest {
                 .andExpect(jsonPath("$.role").value("USER"))
                 .andExpect(jsonPath("$.status").value("ACTIVE"))
                 .andExpect(jsonPath("$.wallet.currency").value("ETB"))
+                .andExpect(jsonPath("$.wallet.balance").value(0))
                 .andExpect(jsonPath("$.wallet.status").value("ACTIVE"));
 
         assertThat(userRepository.count()).isEqualTo(1);

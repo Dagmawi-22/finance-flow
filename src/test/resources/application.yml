@@ -1,0 +1,4 @@
+financeflow:
+  jwt:
+    secret: test-jwt-secret-key-must-be-at-least-32-chars
+    expiration-hours: 1

@@ -1,18 +1,16 @@
-package com.financeflow.user.dto;
+package com.financeflow.wallet.dto;
 
 import com.financeflow.domain.WalletStatus;
 import lombok.Builder;
 import lombok.Value;
 
-import java.time.Instant;
 import java.util.UUID;
 
 @Value
 @Builder
-public class WalletResponse {
+public class WalletBalanceResponse {
     UUID id;
     String currency;
     long balance;
     WalletStatus status;
-    Instant createdAt;
 }

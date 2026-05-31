@@ -24,6 +24,7 @@ public class UserMapper {
         return WalletResponse.builder()
                 .id(wallet.getId())
                 .currency(wallet.getCurrency())
+                .balance(wallet.getBalance())
                 .status(wallet.getStatus())
                 .createdAt(wallet.getCreatedAt())
                 .build();

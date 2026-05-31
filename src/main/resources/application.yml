@@ -47,3 +47,6 @@ springdoc:
 financeflow:
   wallet:
     default-currency: ${WALLET_DEFAULT_CURRENCY:ETB}
+  jwt:
+    secret: ${JWT_SECRET:local-dev-only-change-me-32chars-min}
+    expiration-hours: ${JWT_EXPIRATION_HOURS:24}

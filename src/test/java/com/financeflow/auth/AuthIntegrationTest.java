@@ -1,24 +1,22 @@
-package com.financeflow.user;
+package com.financeflow.auth;
 
-import com.financeflow.domain.UserRepository;
-import com.financeflow.domain.WalletRepository;
+import com.financeflow.support.AuthTestSupport;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -28,7 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Testcontainers
 @EnabledIf("com.financeflow.support.DockerSupport#isAvailable")
 @Transactional
-class UserCreationIntegrationTest {
+class AuthIntegrationTest {
 
     @Container
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")
@@ -52,58 +50,59 @@ class UserCreationIntegrationTest {
     @Autowired
     MockMvc mockMvc;
 
-    @Autowired
-    UserRepository userRepository;
+    @Test
+    void loginReturnsTokenForValidCredentials() throws Exception {
+        createUser("login-ok@example.com");
 
-    @Autowired
-    WalletRepository walletRepository;
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "login-ok@example.com",
+                                  "password": "password123"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").isNotEmpty())
+                .andExpect(jsonPath("$.tokenType").value("Bearer"))
+                .andExpect(jsonPath("$.email").value("login-ok@example.com"))
+                .andExpect(jsonPath("$.role").value("USER"));
+    }
 
     @Test
-    void createUserCreatesWallet() throws Exception {
+    void loginRejectsWrongPassword() throws Exception {
+        createUser("login-bad@example.com");
+
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "login-bad@example.com",
+                                  "password": "wrongpassword"
+                                }
+                                """))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void walletEndpointsRequireAuth() throws Exception {
+        mockMvc.perform(post("/api/v1/wallets/00000000-0000-0000-0000-000000000001/deposits")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "amount": 100 }
+                                """))
+                .andExpect(status().isUnauthorized());
+    }
+
+    private void createUser(String email) throws Exception {
         mockMvc.perform(post("/api/v1/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "email": "alice@example.com",
+                                  "email": "%s",
                                   "password": "password123"
                                 }
-                                """))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.email").value("alice@example.com"))
-                .andExpect(jsonPath("$.role").value("USER"))
-                .andExpect(jsonPath("$.status").value("ACTIVE"))
-                .andExpect(jsonPath("$.wallet.currency").value("ETB"))
-                .andExpect(jsonPath("$.wallet.balance").value(0))
-                .andExpect(jsonPath("$.wallet.status").value("ACTIVE"));
-
-        assertThat(userRepository.count()).isEqualTo(1);
-        assertThat(walletRepository.count()).isEqualTo(1);
-
-        var wallet = walletRepository.findAll().getFirst();
-        var user = userRepository.findAll().getFirst();
-        assertThat(wallet.getUser().getId()).isEqualTo(user.getId());
-    }
-
-    @Test
-    void duplicateEmailReturnsConflict() throws Exception {
-        var body = """
-                {
-                  "email": "bob@example.com",
-                  "password": "password123"
-                }
-                """;
-
-        mockMvc.perform(post("/api/v1/users")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
+                                """.formatted(email)))
                 .andExpect(status().isCreated());
-
-        mockMvc.perform(post("/api/v1/users")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
-                .andExpect(status().isConflict());
-
-        assertThat(userRepository.count()).isEqualTo(1);
-        assertThat(walletRepository.count()).isEqualTo(1);
     }
 }

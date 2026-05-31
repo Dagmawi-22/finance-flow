@@ -12,6 +12,7 @@ import java.util.UUID;
 public class WalletResponse {
     UUID id;
     String currency;
+    long balance;
     WalletStatus status;
     Instant createdAt;
 }

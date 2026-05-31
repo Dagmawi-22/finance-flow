@@ -1,6 +1,11 @@
 package com.financeflow.api;
 
 import com.financeflow.user.DuplicateEmailException;
+import com.financeflow.wallet.CurrencyMismatchException;
+import com.financeflow.wallet.InsufficientFundsException;
+import com.financeflow.wallet.InvalidTransferException;
+import com.financeflow.wallet.WalletNotActiveException;
+import com.financeflow.wallet.WalletNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -13,6 +18,26 @@ public class ApiExceptionHandler {
     @ExceptionHandler(DuplicateEmailException.class)
     ProblemDetail handleDuplicateEmail(DuplicateEmailException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    @ExceptionHandler(WalletNotFoundException.class)
+    ProblemDetail handleWalletNotFound(WalletNotFoundException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    @ExceptionHandler(InsufficientFundsException.class)
+    ProblemDetail handleInsufficientFunds(InsufficientFundsException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage());
+    }
+
+    @ExceptionHandler(WalletNotActiveException.class)
+    ProblemDetail handleWalletNotActive(WalletNotActiveException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    @ExceptionHandler({CurrencyMismatchException.class, InvalidTransferException.class})
+    ProblemDetail handleBadTransfer(RuntimeException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

@@ -4,6 +4,7 @@ import com.financeflow.auth.CurrentUser;
 import com.financeflow.domain.Wallet;
 import com.financeflow.domain.WalletRepository;
 import com.financeflow.domain.WalletStatus;
+import com.financeflow.ledger.LedgerService;
 import com.financeflow.wallet.dto.AmountRequest;
 import com.financeflow.wallet.dto.TransferRequest;
 import com.financeflow.wallet.dto.TransferResponse;
@@ -21,6 +22,7 @@ public class WalletService {
     private final WalletRepository walletRepository;
     private final WalletMapper walletMapper;
     private final CurrentUser currentUser;
+    private final LedgerService ledgerService;
 
     @Transactional(readOnly = true)
     public WalletBalanceResponse getWallet(UUID walletId) {
@@ -30,15 +32,15 @@ public class WalletService {
     @Transactional
     public WalletBalanceResponse deposit(UUID walletId, AmountRequest request) {
         var wallet = requireOwnedActiveWalletForUpdate(walletId);
-        wallet.setBalance(wallet.getBalance() + request.amount());
-        return walletMapper.toBalanceResponse(wallet);
+        var result = ledgerService.recordDeposit(wallet, request.amount());
+        return walletMapper.toBalanceResponse(wallet, result.transactionId());
     }
 
     @Transactional
     public WalletBalanceResponse withdraw(UUID walletId, AmountRequest request) {
         var wallet = requireOwnedActiveWalletForUpdate(walletId);
-        debit(wallet, request.amount());
-        return walletMapper.toBalanceResponse(wallet);
+        var result = ledgerService.recordWithdrawal(wallet, request.amount());
+        return walletMapper.toBalanceResponse(wallet, result.transactionId());
     }
 
     @Transactional
@@ -68,15 +70,15 @@ public class WalletService {
             throw new CurrencyMismatchException(from.getCurrency(), to.getCurrency());
         }
 
-        debit(from, request.amount());
-        to.setBalance(to.getBalance() + request.amount());
+        var result = ledgerService.recordTransfer(from, to, request.amount());
 
         return TransferResponse.builder()
+                .transactionId(result.transactionId())
                 .fromWalletId(from.getId())
                 .toWalletId(to.getId())
                 .amount(request.amount())
-                .fromBalance(from.getBalance())
-                .toBalance(to.getBalance())
+                .fromBalance(result.fromBalance())
+                .toBalance(result.toBalance())
                 .build();
     }
 
@@ -106,12 +108,5 @@ public class WalletService {
         if (!wallet.getUser().getId().equals(userId)) {
             throw new WalletAccessDeniedException(wallet.getId());
         }
-    }
-
-    private void debit(Wallet wallet, long amount) {
-        if (wallet.getBalance() < amount) {
-            throw new InsufficientFundsException();
-        }
-        wallet.setBalance(wallet.getBalance() - amount);
     }
 }

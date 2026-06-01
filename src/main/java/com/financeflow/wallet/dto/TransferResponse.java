@@ -8,6 +8,7 @@ import java.util.UUID;
 @Value
 @Builder
 public class TransferResponse {
+    UUID transactionId;
     UUID fromWalletId;
     UUID toWalletId;
     long amount;

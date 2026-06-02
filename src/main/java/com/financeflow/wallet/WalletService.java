@@ -5,6 +5,7 @@ import com.financeflow.domain.Wallet;
 import com.financeflow.domain.WalletRepository;
 import com.financeflow.domain.WalletStatus;
 import com.financeflow.ledger.LedgerService;
+import com.financeflow.limits.TransactionLimitValidator;
 import com.financeflow.wallet.dto.AmountRequest;
 import com.financeflow.wallet.dto.TransferRequest;
 import com.financeflow.wallet.dto.TransferResponse;
@@ -23,6 +24,7 @@ public class WalletService {
     private final WalletMapper walletMapper;
     private final CurrentUser currentUser;
     private final LedgerService ledgerService;
+    private final TransactionLimitValidator transactionLimitValidator;
 
     @Transactional(readOnly = true)
     public WalletBalanceResponse getWallet(UUID walletId) {
@@ -32,6 +34,7 @@ public class WalletService {
     @Transactional
     public WalletBalanceResponse deposit(UUID walletId, AmountRequest request) {
         var wallet = requireOwnedActiveWalletForUpdate(walletId);
+        transactionLimitValidator.validateAmount(request.amount());
         var result = ledgerService.recordDeposit(wallet, request.amount());
         return walletMapper.toBalanceResponse(wallet, result.transactionId());
     }
@@ -39,6 +42,7 @@ public class WalletService {
     @Transactional
     public WalletBalanceResponse withdraw(UUID walletId, AmountRequest request) {
         var wallet = requireOwnedActiveWalletForUpdate(walletId);
+        transactionLimitValidator.validateOutgoing(wallet, request.amount());
         var result = ledgerService.recordWithdrawal(wallet, request.amount());
         return walletMapper.toBalanceResponse(wallet, result.transactionId());
     }
@@ -70,6 +74,7 @@ public class WalletService {
             throw new CurrencyMismatchException(from.getCurrency(), to.getCurrency());
         }
 
+        transactionLimitValidator.validateOutgoing(from, request.amount());
         var result = ledgerService.recordTransfer(from, to, request.amount());
 
         return TransferResponse.builder()

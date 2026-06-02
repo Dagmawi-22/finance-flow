@@ -2,6 +2,8 @@ package com.financeflow.api;
 
 import com.financeflow.auth.AccountSuspendedException;
 import com.financeflow.auth.InvalidCredentialsException;
+import com.financeflow.limits.DailyLimitExceededException;
+import com.financeflow.limits.MaxTransactionAmountExceededException;
 import com.financeflow.user.DuplicateEmailException;
 import com.financeflow.wallet.CurrencyMismatchException;
 import com.financeflow.wallet.WalletAccessDeniedException;
@@ -45,6 +47,11 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(InsufficientFundsException.class)
     ProblemDetail handleInsufficientFunds(InsufficientFundsException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage());
+    }
+
+    @ExceptionHandler({MaxTransactionAmountExceededException.class, DailyLimitExceededException.class})
+    ProblemDetail handleTransactionLimits(RuntimeException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage());
     }
 

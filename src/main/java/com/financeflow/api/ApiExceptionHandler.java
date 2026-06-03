@@ -2,6 +2,8 @@ package com.financeflow.api;
 
 import com.financeflow.auth.AccountSuspendedException;
 import com.financeflow.auth.InvalidCredentialsException;
+import com.financeflow.idempotency.IdempotencyConflictException;
+import com.financeflow.ledger.BalanceReconciliationException;
 import com.financeflow.limits.DailyLimitExceededException;
 import com.financeflow.limits.MaxTransactionAmountExceededException;
 import com.financeflow.user.DuplicateEmailException;
@@ -63,6 +65,16 @@ public class ApiExceptionHandler {
     @ExceptionHandler({CurrencyMismatchException.class, InvalidTransferException.class})
     ProblemDetail handleBadTransfer(RuntimeException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    @ExceptionHandler(IdempotencyConflictException.class)
+    ProblemDetail handleIdempotencyConflict(IdempotencyConflictException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    @ExceptionHandler(BalanceReconciliationException.class)
+    ProblemDetail handleBalanceReconciliation(BalanceReconciliationException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

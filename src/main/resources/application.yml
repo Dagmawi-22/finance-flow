@@ -53,3 +53,6 @@ financeflow:
   limits:
     max-per-transaction: ${MAX_PER_TRANSACTION:1000000}
     max-daily-outgoing: ${MAX_DAILY_OUTGOING:5000000}
+  idempotency:
+    ttl-hours: ${IDEMPOTENCY_TTL_HOURS:24}
+    lock-seconds: ${IDEMPOTENCY_LOCK_SECONDS:30}

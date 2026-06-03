@@ -1,8 +1,10 @@
 # FinanceFlow
 
-Ledger-first wallet platform — Spring Boot, PostgreSQL, Redis.
+Ledger-first wallet platform - Spring Boot, PostgreSQL, Redis.
 
 **Requires:** Java 21, Maven 3.9, Docker
+
+Amounts are in **minor units** (e.g. cents).
 
 ```bash
 cp .env.example .env
@@ -18,6 +20,8 @@ docker compose up -d postgres redis && mvn spring-boot:run
 - Swagger: http://localhost:8080/swagger-ui.html
 - Tests: `mvn test` (needs Docker)
 
-**Roadmap:** wallets → ledger → idempotency → audit
+**Roadmap:** idempotency ✓ · audit · reporting
 
 Auth: `POST /api/v1/auth/login` → use `Authorization: Bearer <token>` on wallet endpoints.
+
+Money endpoints accept optional `Idempotency-Key` header for safe retries.

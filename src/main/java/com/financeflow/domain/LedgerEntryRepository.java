@@ -1,10 +1,13 @@
 package com.financeflow.domain;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 public interface LedgerEntryRepository extends JpaRepository<LedgerEntry, UUID> {
@@ -37,4 +40,16 @@ public interface LedgerEntryRepository extends JpaRepository<LedgerEntry, UUID> 
               AND t.status = com.financeflow.domain.TransactionStatus.COMPLETED
             """)
     long computeBalanceFromCompletedEntries(@Param("walletId") UUID walletId);
+
+    List<LedgerEntry> findByTransaction_Id(UUID transactionId);
+
+    @Query("""
+            SELECT le FROM LedgerEntry le
+            JOIN FETCH le.transaction t
+            WHERE le.wallet.id = :walletId
+            ORDER BY t.createdAt DESC
+            """)
+    Page<LedgerEntry> findByWalletIdOrderByTransactionCreatedAtDesc(
+            @Param("walletId") UUID walletId,
+            Pageable pageable);
 }

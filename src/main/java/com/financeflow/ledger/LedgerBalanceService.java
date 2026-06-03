@@ -18,7 +18,7 @@ public class LedgerBalanceService {
 
     public long applyEntry(Wallet wallet, LedgerDirection direction, long amount) {
         var newBalance = wallet.getBalance() + signedDelta(direction, amount);
-        if (newBalance < 0) {
+        if (!wallet.isSystem() && newBalance < 0) {
             throw new InsufficientFundsException();
         }
         wallet.setBalance(newBalance);

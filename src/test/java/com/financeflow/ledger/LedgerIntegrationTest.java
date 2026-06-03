@@ -109,8 +109,11 @@ class LedgerIntegrationTest {
         assertThat(transaction.getType()).isEqualTo(TransactionType.DEPOSIT);
         assertThat(transaction.getStatus()).isEqualTo(TransactionStatus.COMPLETED);
 
-        assertThat(ledgerEntryRepository.count()).isEqualTo(1);
-        var entry = ledgerEntryRepository.findAll().getFirst();
+        assertThat(ledgerEntryRepository.count()).isEqualTo(2);
+        var entry = ledgerEntryRepository.findAll().stream()
+                .filter(e -> e.getWallet().getId().equals(UUID.fromString(walletId)))
+                .findFirst()
+                .orElseThrow();
         assertThat(entry.getDirection()).isEqualTo(LedgerDirection.CREDIT);
         assertThat(entry.getAmount()).isEqualTo(5000);
         assertThat(entry.getWallet().getId()).isEqualTo(UUID.fromString(walletId));

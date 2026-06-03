@@ -9,11 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.UUID;
 
-/**
- * Wallet balances are a materialized projection of completed ledger entries.
- * Reads and sufficiency checks use the projection (O(1)); {@link #computeBalanceFromLedger}
- * aggregates the ledger for reconciliation (indexed scan, not used on hot paths).
- */
+
 @Service
 @RequiredArgsConstructor
 public class LedgerBalanceService {

@@ -5,6 +5,7 @@ import com.financeflow.domain.LedgerEntryRepository;
 import com.financeflow.domain.TransactionRepository;
 import com.financeflow.domain.TransactionStatus;
 import com.financeflow.domain.TransactionType;
+import com.financeflow.domain.WalletRepository;
 import com.financeflow.support.AuthTestSupport;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -65,6 +66,12 @@ class LedgerIntegrationTest {
 
     @Autowired
     LedgerEntryRepository ledgerEntryRepository;
+
+    @Autowired
+    WalletRepository walletRepository;
+
+    @Autowired
+    LedgerBalanceService ledgerBalanceService;
 
     String walletId;
     String token;
@@ -147,6 +154,49 @@ class LedgerIntegrationTest {
         assertThat(transferEntries).hasSize(2);
         assertThat(transferEntries.stream().map(e -> e.getDirection()).toList())
                 .containsExactlyInAnyOrder(LedgerDirection.DEBIT, LedgerDirection.CREDIT);
+    }
+
+    @Test
+    void materializedBalanceMatchesLedgerAfterOperations() throws Exception {
+        var bobWallet = createSecondWallet();
+
+        mockMvc.perform(post("/api/v1/wallets/{id}/deposits", walletId)
+                        .with(bearerToken(token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "amount": 10000 }
+                                """))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/v1/wallets/transfers")
+                        .with(bearerToken(token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "fromWalletId": "%s",
+                                  "toWalletId": "%s",
+                                  "amount": 3000
+                                }
+                                """.formatted(walletId, bobWallet)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/v1/wallets/{id}/withdrawals", walletId)
+                        .with(bearerToken(token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "amount": 1500 }
+                                """))
+                .andExpect(status().isOk());
+
+        var alice = walletRepository.findById(UUID.fromString(walletId)).orElseThrow();
+        var bob = walletRepository.findById(UUID.fromString(bobWallet)).orElseThrow();
+
+        assertThat(alice.getBalance()).isEqualTo(5500);
+        assertThat(bob.getBalance()).isEqualTo(3000);
+        assertThat(ledgerBalanceService.computeBalanceFromLedger(alice.getId())).isEqualTo(5500);
+        assertThat(ledgerBalanceService.computeBalanceFromLedger(bob.getId())).isEqualTo(3000);
+        ledgerBalanceService.assertConsistentWithLedger(alice);
+        ledgerBalanceService.assertConsistentWithLedger(bob);
     }
 
     private String createSecondWallet() throws Exception {

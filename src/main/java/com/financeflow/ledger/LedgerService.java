@@ -8,7 +8,6 @@ import com.financeflow.domain.TransactionRepository;
 import com.financeflow.domain.TransactionStatus;
 import com.financeflow.domain.TransactionType;
 import com.financeflow.domain.Wallet;
-import com.financeflow.wallet.InsufficientFundsException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -20,30 +19,25 @@ public class LedgerService {
 
     private final TransactionRepository transactionRepository;
     private final LedgerEntryRepository ledgerEntryRepository;
+    private final LedgerBalanceService ledgerBalanceService;
 
     public LedgerResult recordDeposit(Wallet wallet, long amount) {
         var transaction = createCompletedTransaction(TransactionType.DEPOSIT);
-        postEntry(transaction, wallet, LedgerDirection.CREDIT, amount);
-        wallet.setBalance(wallet.getBalance() + amount);
-        return new LedgerResult(transaction.getId(), wallet.getBalance());
+        var balance = postEntry(transaction, wallet, LedgerDirection.CREDIT, amount);
+        return new LedgerResult(transaction.getId(), balance);
     }
 
     public LedgerResult recordWithdrawal(Wallet wallet, long amount) {
-        ensureSufficientBalance(wallet, amount);
         var transaction = createCompletedTransaction(TransactionType.WITHDRAWAL);
-        postEntry(transaction, wallet, LedgerDirection.DEBIT, amount);
-        wallet.setBalance(wallet.getBalance() - amount);
-        return new LedgerResult(transaction.getId(), wallet.getBalance());
+        var balance = postEntry(transaction, wallet, LedgerDirection.DEBIT, amount);
+        return new LedgerResult(transaction.getId(), balance);
     }
 
     public TransferLedgerResult recordTransfer(Wallet from, Wallet to, long amount) {
-        ensureSufficientBalance(from, amount);
         var transaction = createCompletedTransaction(TransactionType.TRANSFER);
-        postEntry(transaction, from, LedgerDirection.DEBIT, amount);
-        postEntry(transaction, to, LedgerDirection.CREDIT, amount);
-        from.setBalance(from.getBalance() - amount);
-        to.setBalance(to.getBalance() + amount);
-        return new TransferLedgerResult(transaction.getId(), from.getBalance(), to.getBalance());
+        var fromBalance = postEntry(transaction, from, LedgerDirection.DEBIT, amount);
+        var toBalance = postEntry(transaction, to, LedgerDirection.CREDIT, amount);
+        return new TransferLedgerResult(transaction.getId(), fromBalance, toBalance);
     }
 
     private Transaction createCompletedTransaction(TransactionType type) {
@@ -55,7 +49,7 @@ public class LedgerService {
         return transactionRepository.save(transaction);
     }
 
-    private void postEntry(Transaction transaction, Wallet wallet, LedgerDirection direction, long amount) {
+    private long postEntry(Transaction transaction, Wallet wallet, LedgerDirection direction, long amount) {
         var entry = new LedgerEntry();
         entry.setTransaction(transaction);
         entry.setWallet(wallet);
@@ -63,11 +57,6 @@ public class LedgerService {
         entry.setAmount(amount);
         entry.setCurrency(wallet.getCurrency());
         ledgerEntryRepository.save(entry);
-    }
-
-    private void ensureSufficientBalance(Wallet wallet, long amount) {
-        if (wallet.getBalance() < amount) {
-            throw new InsufficientFundsException();
-        }
+        return ledgerBalanceService.applyEntry(wallet, direction, amount);
     }
 }
